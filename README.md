@@ -15,6 +15,14 @@ Configure the Kafka broker with `KAFKA_BOOTSTRAP_SERVERS` and the SMTP server wi
 STARTTLS can be enabled with `SMTP_AUTH`, `SMTP_STARTTLS_ENABLE`, and `SMTP_STARTTLS_REQUIRED`. Defaults are intended
 for local development.
 
+Non-English recipient locales are translated dynamically through Google Cloud Translation. Create a Google Cloud
+project, enable the Cloud Translation API, configure a restricted API key as `GOOGLE_TRANSLATE_API_KEY`, and ensure
+the project has billing/API access enabled. Google may charge for usage; check its current pricing and free usage
+allowance before enabling this in production. Translations of the fixed email phrases are cached in memory by target
+language. Recipient names, email addresses, booking data, and interview URLs are inserted after translation and are
+not sent to Google. If translation is unavailable or fails, the email uses English text and the application logs a
+warning. English locales do not call the translation API.
+
 Each message must contain:
 
 ```json
@@ -42,6 +50,6 @@ Each message must contain:
 include non-null `previousStartsAt` and `previousEndsAt`. Times are ISO-8601 instants; timezone values must be valid
 Java time-zone IDs such as `Asia/Kolkata` or `Europe/London`. `interviewUrl` must be an absolute HTTP or HTTPS URL and
 is included as a clickable link in each host and candidate email. `hostLocale` and `attendeeLocale` are optional BCP 47
-language tags that independently select each recipient's email language; missing values default to English. English
-and Hindi are supported, and other language tags currently fall back to English. These locale values also control the
-date/time display format, while the separate timezone fields determine the displayed local time.
+language tags that independently select each recipient's email language; missing values default to English. Any
+language supported by Google Cloud Translation can be requested. These locale values also control the date/time
+display format, while the separate timezone fields determine the displayed local time.

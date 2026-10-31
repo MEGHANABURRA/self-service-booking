@@ -4,11 +4,15 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.time.format.FormatStyle;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -19,16 +23,21 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 @Service
 public class BookingNotificationService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingNotificationService.class);
+
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine;
+    private final PhraseTranslator phraseTranslator;
     private final String fromAddress;
 
     public BookingNotificationService(
             JavaMailSender mailSender,
             SpringTemplateEngine templateEngine,
+            PhraseTranslator phraseTranslator,
             @Value("${booking.notifications.from}") String fromAddress) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
+        this.phraseTranslator = phraseTranslator;
         this.fromAddress = fromAddress;
     }
 
@@ -55,28 +64,38 @@ public class BookingNotificationService {
             String otherPartyName,
             ZoneId recipientTimeZone,
             Locale requestedLocale) {
-        Locale locale = supportedLocale(requestedLocale);
-        ResourceBundle messages = ResourceBundle.getBundle("email", locale);
+        ResourceBundle englishMessages = ResourceBundle.getBundle("email", Locale.ENGLISH);
+        Locale locale = requestedLocale;
+        Map<String, String> messages;
+        try {
+            messages = translateMessages(englishMessages, requestedLocale);
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Email translation failed for locale {} ({}); using English text",
+                    requestedLocale.toLanguageTag(), exception.getClass().getSimpleName());
+            locale = Locale.ENGLISH;
+            messages = englishMessages(englishMessages);
+        }
+
         Context context = new Context(locale);
         context.setVariable("recipientName", recipientName);
         context.setVariable("bookingId", event.bookingId());
         context.setVariable("interviewUrl", event.interviewUrl().toASCIIString());
-        context.setVariable("greeting", format(messages, "greeting", recipientName));
+        context.setVariable("greeting", format(messages, "greeting", locale, recipientName));
         context.setVariable("eventSummary",
                 format(messages, "event." + event.eventType().name().toLowerCase(Locale.ROOT) + "."
-                        + recipientRole.name().toLowerCase(Locale.ROOT), otherPartyName));
-        context.setVariable("startLabel", messages.getString("label.start"));
-        context.setVariable("endLabel", messages.getString("label.end"));
-        context.setVariable("previousStartLabel", messages.getString("label.previousStart"));
-        context.setVariable("previousEndLabel", messages.getString("label.previousEnd"));
-        context.setVariable("newStartLabel", messages.getString("label.newStart"));
-        context.setVariable("newEndLabel", messages.getString("label.newEnd"));
-        context.setVariable("scheduledForLabel", messages.getString("label.scheduledFor"));
-        context.setVariable("interviewCallLabel", messages.getString("label.interviewCall"));
-        context.setVariable("joinInterviewLabel", messages.getString("label.joinInterview"));
-        context.setVariable("bookingReferenceLabel", messages.getString("label.bookingReference"));
-        context.setVariable("signoff", messages.getString("signoff"));
-        context.setVariable("signature", messages.getString("signature"));
+                        + recipientRole.name().toLowerCase(Locale.ROOT), locale, otherPartyName));
+        context.setVariable("startLabel", messages.get("label.start"));
+        context.setVariable("endLabel", messages.get("label.end"));
+        context.setVariable("previousStartLabel", messages.get("label.previousStart"));
+        context.setVariable("previousEndLabel", messages.get("label.previousEnd"));
+        context.setVariable("newStartLabel", messages.get("label.newStart"));
+        context.setVariable("newEndLabel", messages.get("label.newEnd"));
+        context.setVariable("scheduledForLabel", messages.get("label.scheduledFor"));
+        context.setVariable("interviewCallLabel", messages.get("label.interviewCall"));
+        context.setVariable("joinInterviewLabel", messages.get("label.joinInterview"));
+        context.setVariable("bookingReferenceLabel", messages.get("label.bookingReference"));
+        context.setVariable("signoff", messages.get("signoff"));
+        context.setVariable("signature", messages.get("signature"));
 
         DateTimeFormatter slotFormat = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
                 .withLocale(locale)
@@ -99,7 +118,7 @@ public class BookingNotificationService {
             case BOOKING_RESCHEDULED -> "booking-rescheduled";
             case BOOKING_CANCELED -> "booking-canceled";
         };
-        String subject = messages.getString("subject." + event.eventType().name().toLowerCase(Locale.ROOT));
+        String subject = messages.get("subject." + event.eventType().name().toLowerCase(Locale.ROOT));
         String html = templateEngine.process(templateName, context);
 
         try {
@@ -119,12 +138,28 @@ public class BookingNotificationService {
         }
     }
 
-    private static Locale supportedLocale(Locale requestedLocale) {
-        return "hi".equals(requestedLocale.getLanguage()) ? Locale.forLanguageTag("hi-IN") : Locale.ENGLISH;
+    private Map<String, String> translateMessages(ResourceBundle englishMessages, Locale locale) {
+        if ("en".equals(locale.getLanguage())) {
+            return englishMessages(englishMessages);
+        }
+
+        Map<String, String> translated = new HashMap<>();
+        for (String key : englishMessages.keySet()) {
+            translated.put(key, phraseTranslator.translate(englishMessages.getString(key), locale));
+        }
+        return Map.copyOf(translated);
     }
 
-    private static String format(ResourceBundle messages, String key, Object... arguments) {
-        return new MessageFormat(messages.getString(key), messages.getLocale()).format(arguments);
+    private static Map<String, String> englishMessages(ResourceBundle englishMessages) {
+        Map<String, String> messages = new HashMap<>();
+        for (String key : englishMessages.keySet()) {
+            messages.put(key, englishMessages.getString(key));
+        }
+        return Map.copyOf(messages);
+    }
+
+    private static String format(Map<String, String> messages, String key, Locale locale, Object... arguments) {
+        return new MessageFormat(messages.get(key), locale).format(arguments);
     }
 
     private enum RecipientRole {

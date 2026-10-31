@@ -1,0 +1,6 @@
+.gradient-background {
+  background: var(--page-gradient);
+  background-attachment: fixed;
+  background-size: cover;
+  background-repeat: no-repeat;
+}

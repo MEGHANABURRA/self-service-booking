@@ -1,0 +1,52 @@
+.signup-content {
+  width: min(100%, 600px);
+}
+
+.signup-content .account-intro {
+  margin-bottom: 22px;
+}
+
+.signup-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+
+.signup-phone-field,
+.signup-country-field,
+.signup-email-field,
+.signup-submit {
+  grid-column: 1 / -1;
+}
+
+.phone-number-control {
+  display: flex;
+  min-width: 0;
+}
+
+.phone-number-control input {
+  min-width: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.field-error {
+  color: #8d2929;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.signup-submit {
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .signup-form {
+    grid-template-columns: 1fr;
+  }
+
+  .signup-phone-field,
+  .signup-country-field,
+  .signup-email-field,
+  .signup-submit {
+    grid-column: auto;
+  }
+}

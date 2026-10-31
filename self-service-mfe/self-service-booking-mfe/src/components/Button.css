@@ -1,0 +1,70 @@
+.shared-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 0;
+  color: #fff;
+  font: 16px/1 ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.shared-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.shared-button:disabled {
+  cursor: not-allowed;
+}
+
+.shared-button--primary {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 18px;
+  border-radius: 4px;
+  background: #17803d;
+}
+
+.shared-button--primary:disabled {
+  background: #879b90;
+}
+
+.shared-button--primary:not(:disabled):hover {
+  background: #11652f;
+}
+
+.shared-button--booking {
+  min-height: 44px;
+  margin-top: 20px;
+  border-radius: 6px;
+  background: var(--ink);
+  font: inherit;
+}
+
+.shared-button--booking:disabled {
+  opacity: 0.45;
+}
+
+.shared-button--text {
+  min-height: 36px;
+  margin: 0;
+  padding: 0 8px;
+  border-radius: 4px;
+  color: #173c34;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shared-button--text:hover {
+  background: rgba(23, 60, 52, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shared-button {
+    transition: none;
+  }
+}

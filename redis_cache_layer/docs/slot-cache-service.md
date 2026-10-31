@@ -5,7 +5,8 @@ still free**. The booking service computes the slots and sends them here. Candid
 (not a host), and the cache hands out one free host per booking atomically. With 3 hosts free at
 10:00, 3 candidates get one each and the 4th is refused.
 
-Base URL `/api/v1`, default port `8081`. Every endpoint is called **by the booking service**; the
+Base URL `/api/v1`, default port `8081`. Full request/response details for every endpoint are in
+[api-reference.md](api-reference.md). Every endpoint is called **by the booking service**; the
 cache service never calls anyone.
 
 ## Flow

@@ -138,6 +138,13 @@ class SlotCacheApiTest {
         mvc.perform(post("/api/v1/drives/drive-1/snapshots").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"hostIds\":[]}"))
                 .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/drives/drive-1/snapshots").contentType(MediaType.APPLICATION_JSON)
+                        .content("{not json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        mvc.perform(get("/api/v1/drives/drive-1/slots").param("from", "yesterday"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
     }
 
     @Test

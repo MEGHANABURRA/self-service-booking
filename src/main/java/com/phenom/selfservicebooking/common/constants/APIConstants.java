@@ -18,6 +18,8 @@ public final class APIConstants {
     public static final String REGISTER = "/register";
     public static final String LOGIN = "/login";
     public static final String USERNAME_AVAILABILITY = "/username-availability";
+    public static final String REFRESH_TOKEN = "/refresh-token";
+    public static final String SEND_EMAIL_OTP = "/email-otp";
 
     // ---- Test ----
     public static final String TEST_BASE = API_BASE + "/test";
@@ -35,6 +37,8 @@ public final class APIConstants {
             AUTH_BASE + REGISTER,
             AUTH_BASE + LOGIN,
             AUTH_BASE + USERNAME_AVAILABILITY,
+            AUTH_BASE + SEND_EMAIL_OTP,  // needed before registering, so it can't require a token
+            AUTH_BASE + REFRESH_TOKEN,   // called when the access token has expired, so it can't require one
             ERROR
     };
 

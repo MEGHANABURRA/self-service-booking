@@ -17,7 +17,11 @@ class RegisterRequestValidationTest {
     private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     private static Map<String, String> errors(String userName, String password) {
-        var request = new RegisterRequest("John Doe", userName, password, "UTC", UserRole.CANDIDATE);
+        return errors(userName, password, "123456");
+    }
+
+    private static Map<String, String> errors(String userName, String password, String otp) {
+        var request = new RegisterRequest("John Doe", userName, password, "UTC", UserRole.CANDIDATE, otp);
         return VALIDATOR.validate(request).stream().collect(Collectors.toMap(
                 v -> v.getPropertyPath().toString(), ConstraintViolation::getMessage, (a, b) -> a + " | " + b));
     }
@@ -51,5 +55,17 @@ class RegisterRequestValidationTest {
     })
     void rejectsWeakPasswords(String password) {
         assertThat(errors("john.doe@example.com", password)).containsKey("password");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"12345", "1234567", "12345a", "12 456"})
+    void rejectsOtpThatIsNotSixDigits(String otp) {
+        assertThat(errors("john.doe@example.com", "S3cret!Pass", otp))
+                .containsEntry("otp", "must be the 6-digit code sent to your email");
+    }
+
+    @Test
+    void requiresOtp() {
+        assertThat(errors("john.doe@example.com", "S3cret!Pass", null)).containsKey("otp");
     }
 }

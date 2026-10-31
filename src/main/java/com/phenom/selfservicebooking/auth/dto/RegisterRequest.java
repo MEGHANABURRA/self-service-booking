@@ -5,6 +5,7 @@ import com.phenom.selfservicebooking.auth.validation.StrongPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
@@ -12,5 +13,6 @@ public record RegisterRequest(
         @NotBlank @Size(max = 254) @Email(regexp = EmailRules.REGEX, message = EmailRules.MESSAGE) String userName,
         @NotBlank @StrongPassword String password,
         @NotBlank @Size(max = 50) String timeZone,
-        @NotNull UserRole userRole) {
+        @NotNull UserRole userRole,
+        @NotBlank @Pattern(regexp = "^\\d{6}$", message = "must be the 6-digit code sent to your email") String otp) {
 }

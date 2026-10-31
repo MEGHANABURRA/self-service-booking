@@ -2,7 +2,10 @@ package com.phenom.selfservicebooking.auth.service;
 
 import com.phenom.selfservicebooking.auth.dto.LoginRequest;
 import com.phenom.selfservicebooking.auth.dto.LoginResponse;
+import com.phenom.selfservicebooking.auth.dto.RefreshTokenRequest;
 import com.phenom.selfservicebooking.auth.dto.RegisterRequest;
+import com.phenom.selfservicebooking.auth.dto.SendOtpRequest;
+import com.phenom.selfservicebooking.auth.dto.SendOtpResponse;
 import com.phenom.selfservicebooking.auth.dto.UserResponse;
 import com.phenom.selfservicebooking.auth.dto.UsernameAvailabilityResponse;
 import com.phenom.selfservicebooking.auth.entity.User;
@@ -29,14 +32,35 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
+    private final EmailOtpService emailOtpService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService,
+                       RefreshTokenService refreshTokenService, EmailOtpService emailOtpService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
+        this.emailOtpService = emailOtpService;
     }
 
-    @Transactional
+    /** Step 1 of registration: email an OTP to prove the user owns the address. */
+    public SendOtpResponse sendRegistrationOtp(SendOtpRequest request, Locale locale) {
+        String email = normalizeUserName(request.email());
+        // Don't send codes to addresses that are already registered
+        if (userRepository.existsByUserNameAndDeletedFalse(email)) {
+            throw new UserAlreadyExistsException(email);
+        }
+        return emailOtpService.send(email, locale);
+    }
+
+    /**
+     * Step 2 of registration: create the user, only if the OTP emailed to userName is correct.
+     *
+     * <p>Not @Transactional on purpose: verifyAndConsume() commits on its own, so a wrong OTP is still
+     * counted as a failed attempt even though registration fails. Every other check runs before the OTP is
+     * checked, so a typo in, say, the time zone doesn't use up a valid OTP.
+     */
     public UserResponse register(RegisterRequest request) {
         String userName = normalizeUserName(request.userName());
         userRepository.findByUserNameAndDeletedFalse(userName).ifPresent(existing -> {
@@ -46,12 +70,15 @@ public class AuthService {
             }
             throw new UserAlreadyExistsException(userName);
         });
+        String timeZone = validateTimeZone(request.timeZone());
+
+        emailOtpService.verifyAndConsume(userName, request.otp().trim());
 
         User user = new User();
         user.setName(request.name().trim());
         user.setUserName(userName);
         user.setPassword(passwordEncoder.encode(request.password()));
-        user.setTimeZone(validateTimeZone(request.timeZone()));
+        user.setTimeZone(timeZone);
         user.setUserRole(request.userRole());
 
         try {
@@ -67,7 +94,7 @@ public class AuthService {
         return new UsernameAvailabilityResponse(normalized, !userRepository.existsByUserNameAndDeletedFalse(normalized));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUserNameAndDeletedFalse(normalizeUserName(request.userName()))
                 .orElseThrow(InvalidCredentialsException::new);
@@ -76,10 +103,26 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
+        return tokensFor(user, refreshTokenService.issue(user));
+    }
+
+    /**
+     * Exchanges a refresh token for a new access token and a new refresh token. The old refresh token
+     * stops working. Not @Transactional itself: rotate() runs in its own transaction so that revoking
+     * sessions on token reuse is committed even though the request fails.
+     */
+    public LoginResponse refresh(RefreshTokenRequest request) {
+        RefreshTokenService.Rotation rotation = refreshTokenService.rotate(request.refreshToken().trim());
+        return tokensFor(rotation.user(), rotation.refreshToken());
+    }
+
+    private LoginResponse tokensFor(User user, String refreshToken) {
         return new LoginResponse(
                 jwtService.generateToken(user),
                 "Bearer",
                 jwtService.getExpirationSeconds(),
+                refreshToken,
+                refreshTokenService.getExpirationSeconds(),
                 UserResponse.from(user));
     }
 

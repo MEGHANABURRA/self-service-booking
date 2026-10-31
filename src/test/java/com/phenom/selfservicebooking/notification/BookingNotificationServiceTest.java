@@ -6,6 +6,8 @@ import jakarta.mail.internet.MimeMessage;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -112,11 +114,18 @@ class BookingNotificationServiceTest {
     @Test
     void sendsEachParticipantEmailInTheirRequestedLanguage() throws Exception {
         RecordingMailSender mailSender = new RecordingMailSender();
-        BookingNotificationService service = createService(mailSender);
+        List<String> translatedPhrases = new ArrayList<>();
+        BookingNotificationService service = createService(
+                mailSender,
+                (phrase, locale) -> {
+                    assertThat(locale).isEqualTo(Locale.forLanguageTag("fr-FR"));
+                    translatedPhrases.add(phrase);
+                    return "FR: " + phrase;
+                });
         service.sendNotifications(new BookingNotificationEvent(
-                "event-hi",
+                "event-fr",
                 BookingEventType.BOOKING_CONFIRMED,
-                "booking-hi",
+                "booking-fr",
                 "Host",
                 "host@example.com",
                 "Candidate",
@@ -127,27 +136,71 @@ class BookingNotificationServiceTest {
                 null,
                 "Asia/Kolkata",
                 "Asia/Kolkata",
-                URI.create("https://meet.example.com/booking-hi"),
+                URI.create("https://meet.example.com/booking-fr"),
                 "en",
-                "hi-IN"));
+                "fr-FR"));
 
         assertThat(mailSender.sentMessages).hasSize(2);
         assertThat(mailSender.sentMessages.get(0).getContent().toString())
-                .contains("Hello Host", "Your interview with candidate");
+                .contains("<html lang=\"en\">", "Hello Host", "Your interview with candidate");
         assertThat(mailSender.sentMessages.get(1).getContent().toString())
-                .contains("<html lang=\"hi-IN\">", "नमस्ते Candidate", "Host के साथ")
-                .contains("साक्षात्कार में शामिल हों");
-        assertThat(mailSender.sentMessages.get(1).getSubject()).isEqualTo("साक्षात्कार की पुष्टि");
+                .contains("<html lang=\"fr-FR\">", "FR: Hello Candidate,",
+                        "FR: Your interview with Host is confirmed.")
+                .contains("FR: Join the interview");
+        assertThat(mailSender.sentMessages.get(1).getSubject()).isEqualTo("FR: Booking confirmed");
+        assertThat(translatedPhrases).isNotEmpty()
+                .allSatisfy(phrase -> assertThat(phrase)
+                        .doesNotContain("Candidate", "Host", "candidate@example.com", "booking-fr",
+                                "https://meet.example.com"));
+    }
+
+    @Test
+    void fallsBackToEnglishWhenTranslationFails() throws Exception {
+        RecordingMailSender mailSender = new RecordingMailSender();
+        BookingNotificationService service = createService(
+                mailSender,
+                (phrase, locale) -> {
+                    throw new IllegalStateException("Translation unavailable");
+                });
+        service.sendNotifications(new BookingNotificationEvent(
+                "event-fallback",
+                BookingEventType.BOOKING_CONFIRMED,
+                "booking-fallback",
+                "Host",
+                "host@example.com",
+                "Candidate",
+                "candidate@example.com",
+                Instant.parse("2026-11-02T05:15:00Z"),
+                Instant.parse("2026-11-02T05:45:00Z"),
+                null,
+                null,
+                "Asia/Kolkata",
+                "Asia/Kolkata",
+                URI.create("https://meet.example.com/booking-fallback"),
+                "fr-FR",
+                "en"));
+
+        assertThat(mailSender.sentMessages).hasSize(2);
+        assertThat(mailSender.sentMessages.get(0).getContent().toString())
+                .contains("<html lang=\"en\">", "Your interview with candidate Candidate is confirmed.");
+        assertThat(mailSender.sentMessages.get(1).getContent().toString())
+                .contains("<html lang=\"en\">", "Your interview with Host is confirmed.");
     }
 
     private static BookingNotificationService createService(RecordingMailSender mailSender) {
+        return createService(mailSender, (phrase, locale) -> phrase);
+    }
+
+    private static BookingNotificationService createService(
+            RecordingMailSender mailSender,
+            PhraseTranslator phraseTranslator) {
         SpringTemplateEngine templateEngine = new SpringTemplateEngine();
         ClassLoaderTemplateResolver resolver = new ClassLoaderTemplateResolver();
         resolver.setPrefix("templates/");
         resolver.setSuffix(".html");
         resolver.setTemplateMode("HTML");
         templateEngine.setTemplateResolver(resolver);
-        return new BookingNotificationService(mailSender, templateEngine, "no-reply@example.com");
+        return new BookingNotificationService(mailSender, templateEngine, phraseTranslator, "no-reply@example.com");
     }
 
     private static class RecordingMailSender extends JavaMailSenderImpl {

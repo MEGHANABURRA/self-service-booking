@@ -4,6 +4,10 @@ export function maxInterviewsPerDayValidation(value: string): string | undefined
   }
 
   const maximum = Number(value)
+  if (maximum > 10) {
+    return 'Maximum number of interviews should be less than 10'
+  }
+
   if (!Number.isSafeInteger(maximum) || maximum < 1) {
     return 'Enter a whole number greater than zero.'
   }

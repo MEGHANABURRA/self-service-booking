@@ -3,15 +3,16 @@ import Button from '../Button'
 import '../../styles/gradientBackground.css'
 import './BookingComponent.css'
 
+const availableSlots = Array.from({ length: 24 }, (_, hour) => {
+  const startTime = `${String(hour).padStart(2, '0')}:00`
+  const endTime = `${String((hour + 1) % 24).padStart(2, '0')}:00`
+
+  return `${startTime} - ${endTime}`
+})
+
 function BookingComponent() {
   const [selectedSlot, setSelectedSlot] = useState('')
   const [continueMessage, setContinueMessage] = useState('')
-  const availableSlots = [
-    '10:00 - 11:00',
-    '11:00 - 12:00',
-    '12:00 - 13:00',
-    '13:00 - 14:00',
-  ]
 
   return (
     <main className="gradient-background rendered-items-page">

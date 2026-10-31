@@ -13,6 +13,7 @@ export interface SignupValues {
   firstName: string
   lastName: string
   emailAddress: string
+  password: string
   country: string
   phoneNumber: string
 }
@@ -35,15 +36,53 @@ export interface SignupState {
   callingCodes: AsyncListState<CallingCodeOption>
 }
 
+export interface RegisterRequest {
+  name: string
+  userName: string
+  password: string
+  timeZone: string
+  userRole: 'HOST' | 'INTERVIEWEE'
+}
+
+export interface LoginRequest {
+  userName: string
+  password: string
+}
+
+export interface AuthState {
+  registrationStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  loginStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  error: string | null
+}
+
 export interface HostPreferencesValues {
   maxInterviewsPerDay: string
   gapDuration: string
+  availability: Record<AvailabilityDay, AvailabilityHours>
 }
 
-export type HostPreferenceField = keyof HostPreferencesValues
-export type HostPreferencesErrors = Partial<
-  Record<HostPreferenceField, string | undefined>
+export type AvailabilityDay =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday'
+
+export interface AvailabilityHours {
+  startTime: string
+  endTime: string
+}
+
+export type HostPreferenceField = 'maxInterviewsPerDay' | 'gapDuration'
+export type AvailabilityDayErrors = Partial<
+  Record<keyof AvailabilityHours, string | undefined>
 >
+export interface HostPreferencesErrors
+  extends Partial<Record<HostPreferenceField, string | undefined>> {
+  availability?: Partial<Record<AvailabilityDay, AvailabilityDayErrors>>
+}
 
 export interface HostPreferencesState {
   values: HostPreferencesValues

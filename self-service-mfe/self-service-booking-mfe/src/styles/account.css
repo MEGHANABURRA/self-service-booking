@@ -1,0 +1,86 @@
+.account-page {
+  min-height: 100svh;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  padding: 48px 24px;
+  color: #172a26;
+}
+
+.account-content {
+  width: min(100%, 440px);
+}
+
+.account-eyebrow {
+  margin: 0 0 14px;
+  color: #38594e;
+  font: 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.account-content h1 {
+  margin: 0;
+  color: #172a26;
+  font: 400 clamp(38px, 6vw, 56px)/1.05 Georgia, 'Times New Roman', serif;
+  letter-spacing: 0;
+}
+
+.account-intro {
+  margin: 12px 0 28px;
+}
+
+.account-form {
+  display: grid;
+  gap: 18px;
+}
+
+.account-form label {
+  display: grid;
+  gap: 7px;
+  color: #203b33;
+  font-size: 14px;
+}
+
+.account-form input,
+.account-form select {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid rgba(23, 60, 52, 0.45);
+  border-radius: 4px;
+  color: #172a26;
+  background: rgba(255, 255, 255, 0.65);
+  font: inherit;
+}
+
+.account-form input::placeholder {
+  color: #89968f;
+  opacity: 1;
+}
+
+.account-form select:required:invalid {
+  color: #89968f;
+}
+
+.account-form select:required:valid {
+  color: #172a26;
+}
+
+.account-form input:focus-visible,
+.account-form select:focus-visible {
+  outline: 2px solid #173c34;
+  outline-offset: 2px;
+}
+
+.account-form input[aria-invalid='true'],
+.account-form select[aria-invalid='true'] {
+  border-color: #8d2929;
+}
+
+.account-message {
+  min-height: 22px;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 13px;
+}

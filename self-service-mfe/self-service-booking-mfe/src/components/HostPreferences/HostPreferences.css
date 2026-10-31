@@ -1,0 +1,7 @@
+.host-preferences-content {
+  width: min(100%, 520px);
+}
+
+.host-preferences-content .account-intro {
+  margin-bottom: 28px;
+}

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<body>
+<p th:text="${greeting}">Hello Host,</p>
+<p th:text="${eventSummary}">Your interview is confirmed.</p>
+<p>
+    <strong th:text="${startLabel}">Start:</strong> <span th:text="${startsAt}">start time</span><br>
+    <strong th:text="${endLabel}">End:</strong> <span th:text="${endsAt}">end time</span><br>
+    <strong th:text="${interviewCallLabel}">Interview call:</strong>
+    <a th:href="${interviewUrl}" th:text="${joinInterviewLabel}">Join the interview</a><br>
+    <strong th:text="${bookingReferenceLabel}">Booking reference:</strong> <span th:text="${bookingId}">booking id</span>
+</p>
+<p><span th:text="${signoff}">Thanks,</span><br><span th:text="${signature}">Self-Service Booking</span></p>
+</body>
+</html>

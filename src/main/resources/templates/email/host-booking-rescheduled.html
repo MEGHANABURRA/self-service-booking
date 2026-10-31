@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:lang="${#locale.toLanguageTag()}">
+<body>
+<p th:text="${greeting}">Hello Host,</p>
+<p th:text="${eventSummary}">Your interview has been rescheduled.</p>
+<p>
+    <strong th:text="${previousStartLabel}">Previous start:</strong> <span th:text="${previousStartsAt}">previous start time</span><br>
+    <strong th:text="${previousEndLabel}">Previous end:</strong> <span th:text="${previousEndsAt}">previous end time</span><br>
+    <strong th:text="${newStartLabel}">New start:</strong> <span th:text="${startsAt}">new start time</span><br>
+    <strong th:text="${newEndLabel}">New end:</strong> <span th:text="${endsAt}">new end time</span><br>
+    <strong th:text="${interviewCallLabel}">Interview call:</strong>
+    <a th:href="${interviewUrl}" th:text="${joinInterviewLabel}">Join the interview</a><br>
+    <strong th:text="${bookingReferenceLabel}">Booking reference:</strong> <span th:text="${bookingId}">booking id</span>
+</p>
+<p><span th:text="${signoff}">Thanks,</span><br><span th:text="${signature}">Self-Service Booking</span></p>
+</body>
+</html>

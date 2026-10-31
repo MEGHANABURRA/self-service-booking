@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: slot-cache-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+
+slot-cache:
+  hold-ttl: 5m
+  drive-ttl: 10m
+  compute-lock-ttl: 10s
+  version-ttl: 7d
+  max-query-range: 31d

@@ -1,0 +1,52 @@
+Self Service Booking - API curls
+================================
+Base URL: http://localhost:8080
+Postman: Import -> Raw text -> paste a curl command.
+
+
+1. Create booking confirmation
+------------------------------
+curl --location 'http://localhost:8080/api/v1/bookings/confirmation' \
+--header 'Content-Type: application/json' \
+--data '{
+    "candidate_id": 1,
+    "host_ids": [101, 102],
+    "date": "2026-11-10",
+    "start_time": "10:00",
+    "end_time": "10:30"
+}'
+
+Expected response: 201 Created
+{
+  "booking_id": "<uuid>",
+  "candidate_id": 1,
+  "host_ids": [101, 102],
+  "date": "2026-11-10",
+  "start_time": "10:00:00",
+  "end_time": "10:30:00",
+  "meet_link": "https://meet.google.com/..."
+}
+
+Error responses:
+  400  missing/invalid fields, end_time not after start_time, or start in the past (UTC)
+  404  unknown host_id or candidate_id
+  409  a host already has the max bookings (default 5) on that date
+  502  Google Calendar call failed
+
+
+2. Cancel booking
+-----------------
+curl --location --request DELETE 'http://localhost:8080/api/v1/bookings/<booking_id>'
+
+Expected response: 204 No Content
+Error responses:
+  404  booking not found or already cancelled
+  502  Google Calendar call failed
+
+
+Notes
+-----
+- date is yyyy-MM-dd; start_time / end_time are HH:mm or HH:mm:ss, in UTC.
+- Local test data: hosts 101, 102 and candidate 1.
+- Host 101 is already fully booked on 2026-11-05 (returns 409); use another date.
+- With the "local" profile the meet link is a placeholder and no Google invites are sent.

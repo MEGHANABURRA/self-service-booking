@@ -2,8 +2,10 @@ import { useAppDispatch, useAppSelector } from '../../redux/hooks'
 import {
   setHostPreferencesErrors,
   setHostPreferencesMessage,
+  updateHostAvailability,
   updateHostPreference,
 } from '../../redux/slices/hostPreferencesSlice'
+import { availabilityHoursValidation } from '../../validations/availabilityHoursValidation'
 import { interviewGapValidation } from '../../validations/interviewGapValidation'
 import { maxInterviewsPerDayValidation } from '../../validations/maxInterviewsPerDayValidation'
 import Button from '../Button'
@@ -11,11 +13,26 @@ import '../../styles/gradientBackground.css'
 import '../../styles/account.css'
 import './HostPreferences.css'
 
+const weekdays = [
+  { key: 'monday', label: 'Monday' },
+  { key: 'tuesday', label: 'Tuesday' },
+  { key: 'wednesday', label: 'Wednesday' },
+  { key: 'thursday', label: 'Thursday' },
+  { key: 'friday', label: 'Friday' },
+  { key: 'saturday', label: 'Saturday' },
+  { key: 'sunday', label: 'Sunday' },
+] as const
+
 function HostPreferences() {
   const dispatch = useAppDispatch()
   const { values, errors, message } = useAppSelector(
     (state) => state.hostPreferences,
   )
+  const maxInterviewsPerDayError =
+    errors.maxInterviewsPerDay ??
+    (Number(values.maxInterviewsPerDay) > 10
+      ? maxInterviewsPerDayValidation(values.maxInterviewsPerDay)
+      : undefined)
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -24,10 +41,21 @@ function HostPreferences() {
         values.maxInterviewsPerDay,
       ),
       gapDuration: interviewGapValidation(values.gapDuration),
+      availability: Object.fromEntries(
+        weekdays.flatMap(({ key }) => {
+          const errors = availabilityHoursValidation(values.availability[key])
+          return errors ? [[key, errors]] : []
+        }),
+      ),
     }
 
     dispatch(setHostPreferencesErrors(nextErrors))
-    if (Object.values(nextErrors).some(Boolean)) {
+    const hasAvailabilityErrors = Object.keys(nextErrors.availability).length > 0
+    if (
+      nextErrors.maxInterviewsPerDay ||
+      nextErrors.gapDuration ||
+      hasAvailabilityErrors
+    ) {
       dispatch(setHostPreferencesMessage('Please correct the highlighted fields.'))
       return
     }
@@ -56,9 +84,9 @@ function HostPreferences() {
               pattern="[0-9]*"
               placeholder="Enter a number"
               value={values.maxInterviewsPerDay}
-              aria-invalid={Boolean(errors.maxInterviewsPerDay)}
+              aria-invalid={Boolean(maxInterviewsPerDayError)}
               aria-describedby={
-                errors.maxInterviewsPerDay ? 'max-interviews-error' : undefined
+                maxInterviewsPerDayError ? 'max-interviews-error' : undefined
               }
               onChange={(event) => {
                 const digitsOnly = event.target.value.replace(/\D/g, '')
@@ -69,9 +97,9 @@ function HostPreferences() {
               }}
               required
             />
-            {errors.maxInterviewsPerDay && (
+            {maxInterviewsPerDayError && (
               <span className="field-error" id="max-interviews-error">
-                {errors.maxInterviewsPerDay}
+                {maxInterviewsPerDayError}
               </span>
             )}
           </label>
@@ -106,6 +134,66 @@ function HostPreferences() {
               </span>
             )}
           </label>
+
+          {weekdays.map(({ key, label }) => (
+            <fieldset className="availability-day" key={key}>
+              <legend>{label}</legend>
+              <div className="availability-times">
+                <label htmlFor={`${key}-start-time`}>
+                  Start time
+                  <input
+                    id={`${key}-start-time`}
+                    name={`${key}StartTime`}
+                    type="time"
+                    value={values.availability[key].startTime.slice(0, 5)}
+                    required
+                    aria-invalid={Boolean(errors.availability?.[key]?.startTime)}
+                    aria-describedby={
+                      errors.availability?.[key]?.startTime
+                        ? `${key}-start-time-error`
+                        : undefined
+                    }
+                    onChange={(event) => dispatch(updateHostAvailability({
+                      day: key,
+                      field: 'startTime',
+                      value: event.target.value ? `${event.target.value}Z` : '',
+                    }))}
+                  />
+                  {errors.availability?.[key]?.startTime && (
+                    <span className="field-error" id={`${key}-start-time-error`}>
+                      {errors.availability[key]?.startTime}
+                    </span>
+                  )}
+                </label>
+                <label htmlFor={`${key}-end-time`}>
+                  End time
+                  <input
+                    id={`${key}-end-time`}
+                    name={`${key}EndTime`}
+                    type="time"
+                    value={values.availability[key].endTime.slice(0, 5)}
+                    required
+                    aria-invalid={Boolean(errors.availability?.[key]?.endTime)}
+                    aria-describedby={
+                      errors.availability?.[key]?.endTime
+                        ? `${key}-availability-error`
+                        : undefined
+                    }
+                    onChange={(event) => dispatch(updateHostAvailability({
+                      day: key,
+                      field: 'endTime',
+                      value: event.target.value ? `${event.target.value}Z` : '',
+                    }))}
+                  />
+                  {errors.availability?.[key]?.endTime && (
+                    <span className="field-error" id={`${key}-availability-error`}>
+                      {errors.availability[key]?.endTime}
+                    </span>
+                  )}
+                </label>
+              </div>
+            </fieldset>
+          ))}
 
           <Button variant="primary" type="submit">Save preferences</Button>
         </form>

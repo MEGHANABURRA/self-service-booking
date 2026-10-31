@@ -12,6 +12,7 @@ const initialState: SignupState = {
     firstName: '',
     lastName: '',
     emailAddress: '',
+    password: '',
     country: '',
     phoneNumber: '',
   },

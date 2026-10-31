@@ -5,3 +5,40 @@
 .host-preferences-content .account-intro {
   margin-bottom: 28px;
 }
+
+.host-preferences-content .field-error {
+  color: #8d2929;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.host-preferences-content .account-form input[aria-invalid='true'] {
+  border-color: #8d2929;
+  background-color: rgba(141, 41, 41, 0.12);
+}
+
+.availability-day {
+  min-width: 0;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(23, 60, 52, 0.3);
+  border-radius: 4px;
+}
+
+.availability-day legend {
+  padding: 0 6px;
+  color: #203b33;
+  font-size: 14px;
+}
+
+.availability-times {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 520px) {
+  .availability-times {
+    grid-template-columns: 1fr;
+  }
+}

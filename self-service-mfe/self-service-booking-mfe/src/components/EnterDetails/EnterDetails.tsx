@@ -2,6 +2,7 @@ import { useEffect, type FormEvent } from 'react'
 import Button from '../Button'
 import SearchableDropdown from '../Dropdown/SearchableDropdown'
 import { useAppDispatch, useAppSelector } from '../../redux/hooks'
+import { registerUser } from '../../redux/api/authApi'
 import { fetchCallingCodes, fetchCountries } from '../../redux/api/signupApi'
 import {
   setSelectedCallingCode,
@@ -15,6 +16,7 @@ import { countryValidation } from '../../validations/countryValidation'
 import { emailAddressValidation } from '../../validations/emailAddressValidation'
 import { firstNameValidation } from '../../validations/firstNameValidation'
 import { lastNameValidation } from '../../validations/lastNameValidation'
+import { passwordValidation } from '../../validations/passwordValidation'
 import { phoneNumberValidation } from '../../validations/phoneNumberValidation'
 import '../../styles/gradientBackground.css'
 import '../../styles/account.css'
@@ -32,6 +34,8 @@ function validateSignupField(
       return lastNameValidation(values.lastName)
     case 'emailAddress':
       return emailAddressValidation(values.emailAddress)
+    case 'password':
+      return passwordValidation(values.password)
     case 'country':
       return countryValidation(values.country)
     case 'phoneNumber':
@@ -42,6 +46,7 @@ function validateSignupField(
 function EnterDetails() {
   const dispatch = useAppDispatch()
   const signupState = useAppSelector((state) => state.signup)
+  const authState = useAppSelector((state) => state.auth)
   const {
     formValues,
     errors,
@@ -89,12 +94,13 @@ function EnterDetails() {
     }))
   }
 
-  function handleSignupSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSignupSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const nextErrors: SignupErrors = {
       firstName: firstNameValidation(formValues.firstName),
       lastName: lastNameValidation(formValues.lastName),
       emailAddress: emailAddressValidation(formValues.emailAddress),
+      password: passwordValidation(formValues.password),
       country: countryValidation(formValues.country),
       phoneNumber: phoneNumberValidation(
         formValues.phoneNumber,
@@ -108,12 +114,20 @@ function EnterDetails() {
       return
     }
 
-    dispatch(setSignupMessage('Your details are ready for account creation.'))
-    const nextPath =
-      window.sessionStorage.getItem('bookingRole') === 'interviewer'
-        ? '/hostPreferences'
-        : '/Booking'
-    window.location.assign(nextPath)
+    dispatch(setSignupMessage(''))
+    const bookingRole = window.sessionStorage.getItem('bookingRole')
+    const result = await dispatch(registerUser({
+      name: `${formValues.firstName.trim()} ${formValues.lastName.trim()}`,
+      userName: formValues.emailAddress.trim(),
+      password: formValues.password,
+      timeZone: 'UTC',
+      userRole: bookingRole === 'interviewer' ? 'HOST' : 'INTERVIEWEE',
+    }))
+    if (registerUser.fulfilled.match(result)) {
+      window.location.assign(
+        bookingRole === 'interviewer' ? '/hostPreferences' : '/Booking',
+      )
+    }
   }
 
   return (
@@ -167,6 +181,27 @@ function EnterDetails() {
             {errors.lastName && (
               <span className="field-error" id="last-name-error">
                 {errors.lastName}
+              </span>
+            )}
+          </label>
+          <label htmlFor="signup-password">
+            Password
+            <input
+              id="signup-password"
+              type="password"
+              name="new-password"
+              autoComplete="new-password"
+              placeholder="Enter your password"
+              value={formValues.password}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? 'signup-password-error' : undefined}
+              onChange={(event) => updateField('password', event.target.value)}
+              onBlur={() => validateField('password')}
+              required
+            />
+            {errors.password && (
+              <span className="field-error" id="signup-password-error">
+                {errors.password}
               </span>
             )}
           </label>
@@ -282,11 +317,18 @@ function EnterDetails() {
               </span>
             )}
           </div>
-          <Button className="signup-submit" variant="primary" type="submit">
+          <Button
+            className="signup-submit"
+            variant="primary"
+            type="submit"
+            disabled={authState.registrationStatus === 'loading'}
+          >
             Create account
           </Button>
         </form>
-        <p className="account-message" role="status">{message}</p>
+        <p className="account-message" role={authState.error ? 'alert' : 'status'}>
+          {authState.error ?? message}
+        </p>
       </section>
 
     </main>

@@ -6,3 +6,9 @@
   margin-top: 20px;
   font-size: 14px;
 }
+
+.auth-error {
+  margin: 0;
+  color: #8d2929;
+  font-size: 13px;
+}

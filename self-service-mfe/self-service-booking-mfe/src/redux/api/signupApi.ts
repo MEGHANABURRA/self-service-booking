@@ -20,7 +20,7 @@ export const fetchCallingCodes = createAsyncThunk<
   'signup/fetchCallingCodes',
   async (_, { signal, rejectWithValue }) => {
     const response = await fetch(
-      'https://countriesnow.space/api/v0.1/countries/codes',
+      import.meta.env.VITE_COUNTRY_CALLING_CODES_API_URL,
       { signal },
     )
 
@@ -62,7 +62,7 @@ export const fetchCountries = createAsyncThunk<
   'signup/fetchCountries',
   async (_, { signal, rejectWithValue }) => {
     const response = await fetch(
-      'https://raw.githubusercontent.com/mledoze/countries/master/countries.json',
+      import.meta.env.VITE_COUNTRIES_API_URL,
       { signal },
     )
 

@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  HOST
+  CANDIDATE
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum Day {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+
+  @@map("day_of_week")
+}
+
+enum BookingStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+
+  @@map("booking_status")
+}
+
+model User {
+  userId    String   @id @default(uuid()) @map("user_id") @db.Uuid
+  name      String
+  userName  String   @unique @map("user_name")
+  password  String
+  timeZone  String   @default("UTC") @map("time_zone")
+  userRole  UserRole @map("user_role")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  deleted   Boolean  @default(false)
+
+  hostPrefs           HostPrefDetails[]
+  bookingsAsHost      Booking[]         @relation("HostBookings")
+  bookingsAsCandidate Booking[]         @relation("CandidateBookings")
+
+  @@map("users")
+}
+
+model HostPrefDetails {
+  id               String   @id @default(uuid()) @db.Uuid
+  hostId           String   @map("host_id") @db.Uuid
+  day              Day
+  startTime        String   @map("start_time") @db.VarChar(5) // "HH:mm", UTC
+  endTime          String   @map("end_time") @db.VarChar(5)
+  slotDurationMins Int      @map("slot_duration_mins")
+  gracePeriod      Int      @map("grace_period") // minutes between meetings
+  maxBookings      Int      @map("max_bookings") // per day
+  deleted          Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  host User @relation(fields: [hostId], references: [userId])
+
+  @@unique([hostId, day])
+  @@map("host_pref_details")
+}
+
+model Booking {
+  bookingId     String        @id @default(uuid()) @map("booking_id") @db.Uuid
+  slotStartTime DateTime      @map("slot_start_time") @db.Timestamptz
+  slotEndTime   DateTime      @map("slot_end_time") @db.Timestamptz
+  candidateId   String        @map("candidate_id") @db.Uuid
+  hostId        String        @map("host_id") @db.Uuid
+  status        BookingStatus @default(BOOKED)
+  cancelledAt   DateTime?     @map("cancelled_at") @db.Timestamptz
+  cancelReason  String?       @map("cancel_reason")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  host      User @relation("HostBookings", fields: [hostId], references: [userId])
+  candidate User @relation("CandidateBookings", fields: [candidateId], references: [userId])
+
+  @@index([hostId, slotStartTime])
+  @@map("booking_data")
+}

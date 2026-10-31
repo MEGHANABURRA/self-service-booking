@@ -1,4 +1,4 @@
-package com.vassarlabs.selfservicebooking;
+package com.phenom.selfservicebooking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

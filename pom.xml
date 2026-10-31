@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.vassarlabs</groupId>
+    <groupId>com.phenom</groupId>
     <artifactId>self-service-booking</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>self-service-booking</name>
